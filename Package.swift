@@ -1,0 +1,65 @@
+// swift-tools-version: 6.0
+import PackageDescription
+
+// Chartroom — the local-first hybrid retrieval engine.
+//
+// A distributable package of six layered libraries, one external dependency:
+//
+//   IndexEngine      SQLite FTS5 (BM25) + exact vector cosine, fused with Reciprocal Rank
+//                    Fusion. Built on the system SQLite, so it has no external dependencies
+//                    and is fully buildable and testable offline.
+//   ConnectorEngine  Source connectors (local files, vaults) → normalized SourcePayload events.
+//   SyncEngine       Connector→engine sync orchestration: event ordering, cursor advancement,
+//                    pause/stop checkpoints.
+//   IndexEnginePDF   Target-separated PDFKit ContentExtractor, registered by the host.
+//   JinaEmbeddings   jina-embeddings-v5-omni-small on the Apple Neural Engine (text/image/
+//                    audio/video into one 1024-d space).
+//   IndexEngineJina  Adapter binding JinaEmbeddings behind IndexEngine's Embedder protocol.
+//
+// One platform floor: IndexEngineJina and JinaEmbeddings require macOS 15 (MLComputePlan),
+// so the whole package floors there.
+let package = Package(
+    name: "Chartroom",
+    platforms: [.macOS(.v15)],
+    products: [
+        .library(name: "IndexEngine", targets: ["IndexEngine"]),
+        .library(name: "ConnectorEngine", targets: ["ConnectorEngine"]),
+        .library(name: "SyncEngine", targets: ["SyncEngine"]),
+        .library(name: "IndexEnginePDF", targets: ["IndexEnginePDF"]),
+        .library(name: "JinaEmbeddings", targets: ["JinaEmbeddings"]),
+        .library(name: "IndexEngineJina", targets: ["IndexEngineJina"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/huggingface/swift-transformers", from: "0.1.17"),
+    ],
+    targets: [
+        .target(
+            name: "IndexEngine",
+            linkerSettings: [.linkedLibrary("sqlite3")]
+        ),
+        .testTarget(name: "IndexEngineTests", dependencies: ["IndexEngine"]),
+
+        .target(name: "ConnectorEngine", dependencies: ["IndexEngine"]),
+        .testTarget(name: "ConnectorEngineTests", dependencies: ["ConnectorEngine"]),
+
+        .target(name: "SyncEngine", dependencies: ["ConnectorEngine", "IndexEngine"]),
+        .testTarget(name: "SyncEngineTests", dependencies: ["SyncEngine"]),
+
+        .target(name: "IndexEnginePDF", dependencies: ["IndexEngine"]),
+        .testTarget(name: "IndexEnginePDFTests", dependencies: ["IndexEnginePDF"]),
+
+        .target(
+            name: "JinaEmbeddings",
+            dependencies: [.product(name: "Transformers", package: "swift-transformers")],
+            resources: [
+                .copy("Resources/mel_filters.f32"),
+                .copy("Resources/mel_window.f32"),
+            ]
+        ),
+        .testTarget(name: "JinaEmbeddingsTests", dependencies: ["JinaEmbeddings"]),
+
+        .target(name: "IndexEngineJina", dependencies: ["IndexEngine", "JinaEmbeddings"]),
+        .testTarget(name: "IndexEngineJinaTests", dependencies: ["IndexEngineJina"]),
+    ],
+    swiftLanguageModes: [.v6]
+)

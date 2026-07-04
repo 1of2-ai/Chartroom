@@ -1,0 +1,67 @@
+import Foundation
+import JinaEmbeddings
+
+/// Resolves the on-disk location of the `JinaV5OmniSmall.bundle` Core ML artifact.
+///
+/// The bundle is large (multi-gigabyte) and intentionally git-ignored, so it is not
+/// guaranteed to exist on any given machine. Callers use `locate` to discover it and
+/// fall back to the mock embedder when it is absent (see `IndexEngineJina.resolveEmbedder`).
+///
+/// Resolution order, first valid wins:
+/// 1. `JINA_MODEL_BUNDLE` environment override (absolute path to the bundle).
+/// 2. A `JinaV5OmniSmall.bundle` resource copied into the host app bundle.
+/// 3. Any caller-supplied `additionalCandidates` — the host supplies its own locations,
+///    e.g. an Application Support install directory or a repo-local development path.
+public enum JinaModelBundleLocator {
+    public static let bundleName = "JinaV5OmniSmall.bundle"
+    public static let environmentKey = "JINA_MODEL_BUNDLE"
+
+    public static func locate(additionalCandidates: [URL] = []) -> URL? {
+        candidates(additionalCandidates: additionalCandidates).first(where: isValidBundle)
+    }
+
+    static func candidates(additionalCandidates: [URL]) -> [URL] {
+        var candidates: [URL] = []
+
+        if let override = ProcessInfo.processInfo.environment[environmentKey], !override.isEmpty {
+            candidates.append(URL(fileURLWithPath: override))
+        }
+
+        if let resource = Bundle.main.url(forResource: "JinaV5OmniSmall", withExtension: "bundle") {
+            candidates.append(resource)
+        }
+
+        candidates.append(contentsOf: additionalCandidates)
+        return candidates
+    }
+
+    /// A bundle is usable only if its manifest decodes and every artifact path the
+    /// omni provider can load is present. A manifest-only directory must not be
+    /// considered model-backed because the first embed would fail later.
+    public static func isValidBundle(_ url: URL) -> Bool {
+        do {
+            let bundle = try JinaModelBundle(url: url)
+            return requiredArtifactURLs(for: bundle).allSatisfy { artifactURL in
+                FileManager.default.fileExists(atPath: artifactURL.path)
+            }
+        } catch {
+            return false
+        }
+    }
+
+    private static func requiredArtifactURLs(for bundle: JinaModelBundle) -> [URL] {
+        let manifest = bundle.manifest
+        let tokenizerFolder = bundle.resolve(manifest.text.tokenizer)
+        return [
+            bundle.resolve(manifest.text.model),
+            tokenizerFolder.appendingPathComponent("tokenizer.json"),
+            tokenizerFolder.appendingPathComponent("tokenizer_config.json"),
+            bundle.resolve(manifest.image.encoder),
+            bundle.resolve(manifest.image.resources),
+            bundle.resolve(manifest.audio.encoder),
+            bundle.resolve(manifest.video.encoder),
+            bundle.resolve(manifest.decoder.embed),
+            bundle.resolve(manifest.decoder.model)
+        ]
+    }
+}
