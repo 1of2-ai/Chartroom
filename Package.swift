@@ -28,6 +28,9 @@ let package = Package(
         .library(name: "IndexEnginePDF", targets: ["IndexEnginePDF"]),
         .library(name: "JinaEmbeddings", targets: ["JinaEmbeddings"]),
         .library(name: "IndexEngineJina", targets: ["IndexEngineJina"]),
+        .library(name: "ChartroomControl", targets: ["ChartroomControl"]),
+        .library(name: "ChartroomMCP", targets: ["ChartroomMCP"]),
+        .executable(name: "chartroom-mcp", targets: ["ChartroomMCPStdio"]),
     ],
     dependencies: [
         .package(url: "https://github.com/huggingface/swift-transformers", from: "0.1.17"),
@@ -60,6 +63,12 @@ let package = Package(
 
         .target(name: "IndexEngineJina", dependencies: ["IndexEngine", "JinaEmbeddings"]),
         .testTarget(name: "IndexEngineJinaTests", dependencies: ["IndexEngineJina"]),
+
+        .target(name: "ChartroomControl", dependencies: ["ConnectorEngine", "IndexEngine", "SyncEngine"]),
+        .testTarget(name: "ChartroomControlTests", dependencies: ["ChartroomControl", "ConnectorEngine", "IndexEngine"]),
+        .target(name: "ChartroomMCP", dependencies: ["ChartroomControl", "ConnectorEngine", "IndexEngine", "SyncEngine"]),
+        .executableTarget(name: "ChartroomMCPStdio", dependencies: ["ChartroomControl", "ChartroomMCP"]),
+        .testTarget(name: "ChartroomMCPTests", dependencies: ["ChartroomMCP", "ChartroomControl", "ConnectorEngine", "IndexEngine"]),
     ],
     swiftLanguageModes: [.v6]
 )
