@@ -35,16 +35,22 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "ChartroomTestSupport",
+            dependencies: ["ConnectorEngine", "IndexEngine", "SyncEngine"],
+            path: "Tests/ChartroomTestSupport"
+        ),
+
+        .target(
             name: "IndexEngine",
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),
-        .testTarget(name: "IndexEngineTests", dependencies: ["IndexEngine"]),
+        .testTarget(name: "IndexEngineTests", dependencies: ["ChartroomTestSupport", "IndexEngine"]),
 
         .target(name: "ConnectorEngine", dependencies: ["IndexEngine"]),
         .testTarget(name: "ConnectorEngineTests", dependencies: ["ConnectorEngine"]),
 
         .target(name: "SyncEngine", dependencies: ["ConnectorEngine", "IndexEngine"]),
-        .testTarget(name: "SyncEngineTests", dependencies: ["SyncEngine"]),
+        .testTarget(name: "SyncEngineTests", dependencies: ["ChartroomTestSupport", "SyncEngine"]),
 
         .target(name: "IndexEnginePDF", dependencies: ["IndexEngine"]),
         .testTarget(name: "IndexEnginePDFTests", dependencies: ["IndexEnginePDF"]),
@@ -63,7 +69,7 @@ let package = Package(
         .testTarget(name: "IndexEngineJinaTests", dependencies: ["IndexEngineJina"]),
 
         .target(name: "ChartroomControl", dependencies: ["ConnectorEngine", "IndexEngine", "SyncEngine"]),
-        .testTarget(name: "ChartroomControlTests", dependencies: ["ChartroomControl", "ConnectorEngine", "IndexEngine"]),
+        .testTarget(name: "ChartroomControlTests", dependencies: ["ChartroomControl", "ChartroomTestSupport", "ConnectorEngine", "IndexEngine"]),
     ],
     swiftLanguageModes: [.v6]
 )
