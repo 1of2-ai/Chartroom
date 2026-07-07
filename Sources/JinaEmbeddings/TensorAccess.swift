@@ -20,13 +20,17 @@ enum TensorAccessError: Error, Equatable, CustomStringConvertible {
     }
 
     private func name(of type: MLMultiArrayDataType) -> String {
+        // Older SDKs do not expose the .int8 case even though the raw dtype value is stable.
+        if type.rawValue == 131_080 {
+            return "int8"
+        }
+
         switch type {
         case .double, .float64: return "float64"
         case .float32: return "float32"
         case .float16: return "float16"
         case .int32: return "int32"
-        case .int8: return "int8"
-        @unknown default: return "raw(\(type.rawValue))"
+        default: return "raw(\(type.rawValue))"
         }
     }
 }
