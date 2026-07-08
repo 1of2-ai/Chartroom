@@ -10,19 +10,10 @@ import UniformTypeIdentifiers
 
 @Suite("IndexEngineJina — Jina text embedding adapter")
 struct IndexEngineJinaTests {
-    /// The repo-local development bundle, or nil when it is not checked out on this
-    /// machine. The real model is git-ignored, so the model-backed test below is
-    /// gated on this and skipped (not failed) when the bundle is absent.
-    static let repoBundle: URL? = {
-        let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()   // IndexEngineJinaTests
-            .deletingLastPathComponent()   // Tests
-            .deletingLastPathComponent()   // IndexEngineJina
-            .deletingLastPathComponent()   // Packages
-            .deletingLastPathComponent()   // repo root
-            .appendingPathComponent("Resources/CoreML/JinaV5OmniSmall.bundle", isDirectory: true)
-        return JinaModelBundleLocator.isValidBundle(url) ? url : nil
-    }()
+    /// The bundled Core ML resource, or nil in checkouts where Git LFS did not pull the
+    /// real payloads. Model-backed tests are gated on this so pointer-only checkouts skip
+    /// rather than failing during Core ML load.
+    static let repoBundle: URL? = JinaModelBundleLocator.locate()
 
     @Test("locator rejects a directory without a manifest")
     func locatorRejectsNonBundle() {
@@ -41,6 +32,15 @@ struct IndexEngineJinaTests {
         try data.write(to: tmp.appendingPathComponent("manifest.json"))
 
         #expect(JinaModelBundleLocator.isValidBundle(tmp) == false)
+    }
+
+    @Test(
+        "locator discovers the bundled model resource when LFS payloads are present",
+        .enabled(if: IndexEngineJinaTests.repoBundle != nil)
+    )
+    func locatorDiscoversBundledModelResource() throws {
+        let bundle = try #require(Self.repoBundle)
+        #expect(JinaModelBundleLocator.isValidBundle(bundle))
     }
 
     @Test("manifest changes produce distinct embedding spaces")

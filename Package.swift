@@ -65,7 +65,11 @@ let package = Package(
         ),
         .testTarget(name: "JinaEmbeddingsTests", dependencies: ["JinaEmbeddings"]),
 
-        .target(name: "IndexEngineJina", dependencies: ["IndexEngine", "JinaEmbeddings"]),
+        .target(
+            name: "IndexEngineJina",
+            dependencies: ["IndexEngine", "JinaEmbeddings"],
+            resources: [.copy("Resources/CoreML/JinaV5OmniSmall.bundle")]
+        ),
         .testTarget(name: "IndexEngineJinaTests", dependencies: ["IndexEngineJina"]),
 
         .target(name: "ChartroomControl", dependencies: ["ConnectorEngine", "IndexEngine", "SyncEngine"]),

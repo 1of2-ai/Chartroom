@@ -3,15 +3,16 @@ import JinaEmbeddings
 
 /// Resolves the on-disk location of the `JinaV5OmniSmall.bundle` Core ML artifact.
 ///
-/// The bundle is large (multi-gigabyte) and intentionally git-ignored, so it is not
-/// guaranteed to exist on any given machine. Callers use `locate` to discover it and
-/// fall back to the mock embedder when it is absent (see `IndexEngineJina.resolveEmbedder`).
+/// The bundle is large (multi-gigabyte) and shipped through Git LFS, so checkouts that
+/// skip LFS can still be missing the real payloads. Callers use `locate` to discover it
+/// and fall back to the mock embedder when it is absent (see `IndexEngineJina.resolveEmbedder`).
 ///
 /// Resolution order, first valid wins:
 /// 1. `JINA_MODEL_BUNDLE` environment override (absolute path to the bundle).
 /// 2. A `JinaV5OmniSmall.bundle` resource copied into the host app bundle.
 /// 3. Any caller-supplied `additionalCandidates` — the host supplies its own locations,
 ///    e.g. an Application Support install directory or a repo-local development path.
+/// 4. The `IndexEngineJina` SwiftPM package resource.
 public enum JinaModelBundleLocator {
     public static let bundleName = "JinaV5OmniSmall.bundle"
     public static let environmentKey = "JINA_MODEL_BUNDLE"
@@ -32,6 +33,10 @@ public enum JinaModelBundleLocator {
         }
 
         candidates.append(contentsOf: additionalCandidates)
+
+        if let packageResource = Bundle.module.url(forResource: "JinaV5OmniSmall", withExtension: "bundle") {
+            candidates.append(packageResource)
+        }
         return candidates
     }
 
