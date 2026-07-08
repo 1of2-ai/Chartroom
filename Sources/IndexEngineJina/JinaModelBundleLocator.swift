@@ -3,8 +3,9 @@ import JinaEmbeddings
 
 /// Resolves the on-disk location of the `JinaV5OmniSmall.bundle` Core ML artifact.
 ///
-/// The bundle is large (multi-gigabyte) and shipped through Git LFS, so checkouts that
-/// skip LFS can still be missing the real payloads. Callers use `locate` to discover it
+/// The bundle is large (multi-gigabyte) and distributed as release assets rather than
+/// through the package checkout (`.lfsconfig` excludes it from LFS smudge, so SwiftPM
+/// checkouts contain pointer files only). Callers use `locate` to discover a staged copy
 /// and fall back to the mock embedder when it is absent (see `IndexEngineJina.resolveEmbedder`).
 ///
 /// Resolution order, first valid wins:

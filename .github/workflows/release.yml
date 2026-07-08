@@ -23,6 +23,15 @@ jobs:
       - name: Test
         run: swift test
 
+      - name: Fetch model payloads
+        run: |
+          git lfs pull \
+            --include "Sources/IndexEngineJina/Resources/CoreML/JinaV5OmniSmall.bundle/**" \
+            --exclude ""
+
+      - name: Package model assets
+        run: Scripts/package-model-assets.sh dist
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -30,4 +39,5 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" \
             --verify-tag \
             --title "Chartroom ${GITHUB_REF_NAME}" \
-            --generate-notes
+            --generate-notes \
+            dist/JinaV5OmniSmall.bundle.*.zip dist/SHA256SUMS

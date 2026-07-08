@@ -1,0 +1,2 @@
+[lfs]
+	fetchexclude = Sources/IndexEngineJina/Resources/CoreML/JinaV5OmniSmall.bundle/**
